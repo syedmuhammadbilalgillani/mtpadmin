@@ -5,7 +5,7 @@ export enum UserRole {
   ADMIN = "admin",
   EDITOR = "editor",
 }
-const getPermissionsByRole = (role: any): string[] => {
+const getPermissionsByRole = (role: UserRole | string): string[] => {
   switch (role) {
     case UserRole.ADMIN:
       // Admin gets all permissions
@@ -36,9 +36,7 @@ export const usePermission = () => {
    * @returns boolean indicating if user has all permissions
    */
   const hasAllPermissions = (permissions: string[]): boolean => {
-    return userPermissions.every((permission: any) =>
-      permissions.includes(permission)
-    );
+    return permissions.every((permission) => userPermissions.includes(permission));
   };
 
   /**
@@ -47,9 +45,7 @@ export const usePermission = () => {
    * @returns boolean indicating if user has at least one permission
    */
   const hasAnyPermission = (permissions: string[]): boolean => {
-    return userPermissions.some((permission: any) =>
-      permissions.includes(permission)
-    );
+    return permissions.some((permission) => userPermissions.includes(permission));
   };
 
   return {

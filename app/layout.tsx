@@ -1,15 +1,9 @@
+import AuthSessionProvider from "@/components/providers/session-provider";
+import ThemeProvider from "@/components/sidebarlayout/ThemeProvider";
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
-import ThemeProvider from "@/components/sidebarlayout/ThemeProvider";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import AppSidebar from "@/components/sidebarlayout/app-side-bar";
-import AuthSessionProvider from "@/components/providers/session-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -48,15 +42,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>
-          <ThemeProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset className="p-4">
-                <SidebarTrigger />
-                {children}
-              </SidebarInset>
-            </SidebarProvider>
-          </ThemeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </AuthSessionProvider>
       </body>
     </html>

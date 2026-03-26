@@ -21,37 +21,19 @@ const getInitialTheme = (): Theme => {
 };
 
 const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme()); 
-  const [isLoading, setIsLoading] = useState(true);
+  const [theme] = useState<Theme>(getInitialTheme());
 
   useEffect(() => {
-    const initialTheme = getInitialTheme();
-    setTheme(initialTheme as Theme);
-    setIsLoading(false);
-  }, []);
+    const root = document.documentElement;
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const appliedTheme = theme === "system" ? (systemDark ? "dark" : "light") : theme;
 
-  useEffect(() => {
-    if (!isLoading) {
-      const root = document.documentElement;
-      const systemDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      const appliedTheme =
-        theme === "system" ? (systemDark ? "dark" : "light") : theme;
+    root.setAttribute("data-theme", appliedTheme);
+    root.classList.toggle("dark", appliedTheme === "dark");
 
-      // Apply the theme to the root element
-      root.setAttribute("data-theme", appliedTheme);
-      root.classList.toggle("dark", appliedTheme === "dark");
-
-      // Save the theme to localStorage and cookies
-      localStorage.setItem("theme", appliedTheme);
-      Cookies.set("theme", theme, { expires: 365 }); // Store theme in a cookie for 1 year
-    }
-  }, [theme, isLoading]);
-
-  if (isLoading) {
-    return null; // or a loading spinner
-  }
+    localStorage.setItem("theme", appliedTheme);
+    Cookies.set("theme", theme, { expires: 365 });
+  }, [theme]);
 
   return <>{children}</>;
 };

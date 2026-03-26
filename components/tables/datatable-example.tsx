@@ -18,51 +18,65 @@ type DemoUserRow = {
   website: string
 }
 
+type ServerUser = {
+  id: string
+  email: string
+  role?: string
+  status?: string
+  emailVerifiedAt?: string | null
+  createdAt?: string
+  profile?: { fullName?: string | null } | null
+}
+
 export default function DataTableExample() {
   const [payloadPreview, setPayloadPreview] = React.useState<string>("")
   const [selectedUserKeys, setSelectedUserKeys] = React.useState<string[]>([])
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const tableData: DemoUserRow[] = React.useMemo(
-    () => [
-      {
-        id: "u_1001",
-        name: "John Doe",
-        email: "john@company.com",
-        status: "active",
-        verified: true,
-        createdAt: "2026-03-20T10:15:00Z",
-        balance: 1234.56,
-        tags: ["admin", "finance", "ops"],
-        progress: 78,
-        website: "https://example.com",
-      },
-      {
-        id: "u_1002",
-        name: "Ayesha Khan",
-        email: "ayesha@company.com",
-        status: "pending",
-        verified: false,
-        createdAt: "2026-03-18T08:00:00Z",
-        balance: 98.1,
-        tags: ["manager"],
-        progress: 35,
-        website: "https://nextjs.org",
-      },
-      {
-        id: "u_1003",
-        name: "Sam Lee",
-        email: "sam@company.com",
-        status: "blocked",
-        verified: false,
-        createdAt: "2026-02-01T18:30:00Z",
-        balance: 0,
-        tags: ["viewer", "trial", "support"],
-        progress: 10,
-        website: "https://react.dev",
-      },
-    ],
-    []
-  )
+  const [tableData, setTableData] = React.useState<DemoUserRow[]>([])
+
+  React.useEffect(() => {
+    let cancelled = false
+    async function run() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const res = await fetch("/api/server/users?limit=25", { cache: "no-store" })
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { message?: string }
+          throw new Error(body?.message ?? "Failed to load users")
+        }
+        const payload = (await res.json()) as { data?: ServerUser[] }
+        const rows: DemoUserRow[] = (payload.data ?? []).map((u) => {
+          const statusRaw = (u.status ?? "").toLowerCase()
+          const status: DemoUserRow["status"] =
+            statusRaw === "active" ? "active" : statusRaw === "pending" ? "pending" : "blocked"
+          return {
+            id: u.id,
+            name: u.profile?.fullName ?? u.email,
+            email: u.email,
+            status,
+            verified: Boolean(u.emailVerifiedAt),
+            createdAt: u.createdAt ?? new Date().toISOString(),
+            balance: 0,
+            tags: [u.role ?? "user"],
+            progress: 0,
+            website: "",
+          }
+        })
+        if (!cancelled) setTableData(rows)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : "Failed to load users")
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const tableColumns: DataTableColumn<DemoUserRow>[] = React.useMemo(
     () => [
@@ -175,6 +189,7 @@ export default function DataTableExample() {
         columns={tableColumns}
         getRowId={(row) => row.id}
         caption="Demo users table"
+        isLoading={isLoading}
         enableRowSelection
         selectedRowKeys={selectedUserKeys}
         onSelectedRowKeysChange={setSelectedUserKeys}
@@ -192,6 +207,11 @@ export default function DataTableExample() {
         }}
         onRowClick={(row) => setPayloadPreview(JSON.stringify(row, null, 2))}
       />
+      {loadError ? (
+        <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {loadError}
+        </div>
+      ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
         Selected keys: {selectedUserKeys.length ? selectedUserKeys.join(", ") : "None"}
       </p>
