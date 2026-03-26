@@ -55,7 +55,7 @@ const sections: DynamicFormSection<SignInValues>[] = [
   },
 ];
 
-export default function SignInPage() {
+function SignInInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
@@ -139,5 +139,26 @@ export default function SignInPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <main className="min-h-screen bg-muted/30">
+          <div className="mx-auto flex min-h-screen max-w-md items-center px-4 py-10">
+            <div className="w-full rounded-xl border bg-background p-5 shadow-sm md:p-6">
+              <div className="h-5 w-24 animate-pulse rounded bg-muted" />
+              <div className="mt-4 h-10 w-full animate-pulse rounded bg-muted" />
+              <div className="mt-3 h-10 w-full animate-pulse rounded bg-muted" />
+              <div className="mt-4 h-10 w-full animate-pulse rounded bg-muted" />
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <SignInInner />
+    </React.Suspense>
   );
 }
