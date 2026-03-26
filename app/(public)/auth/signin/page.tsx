@@ -94,13 +94,16 @@ function SignInInner() {
                   <Button
                     type="button"
                     variant="secondary"
-                    className="w-full"
+                    className="flex-1"
                     onClick={() => {
                       setError(null);
                       router.push("/");
                     }}
                   >
                     Back
+                  </Button>
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => router.push("/auth/signup")}>
+                    Create admin
                   </Button>
                 </div>
               }
