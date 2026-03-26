@@ -42,7 +42,9 @@ const fields: DynamicField<SignInValues>[] = [
     type: "checkbox",
     name: "rememberMe",
     label: "Keep me signed in",
+    fieldWrapperClassName: "flex gap-2",
     colSpan: 12,
+    
   },
 ];
 
@@ -84,6 +86,7 @@ function SignInInner() {
               sections={sections}
               defaultValues={{ email: "", password: "", rememberMe: true }}
               submitLabel="Sign in"
+              submitButtonClassName="w-full"
               isSubmitting={isSubmitting}
               transformValues={(values) => ({
                 ...values,
@@ -102,9 +105,9 @@ function SignInInner() {
                   >
                     Back
                   </Button>
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => router.push("/auth/signup")}>
+                  {/* <Button type="button" variant="outline" className="flex-1" onClick={() => router.push("/auth/signup")}>
                     Create admin
-                  </Button>
+                  </Button> */}
                 </div>
               }
               onSubmit={async (values) => {
