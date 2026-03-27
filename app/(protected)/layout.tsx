@@ -11,7 +11,7 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <SidebarProvider>
+    <SidebarProvider suppressContentEditableWarning>
       <AppSidebar />
       <SidebarInset className="p-4">
         <SidebarTrigger />

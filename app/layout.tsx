@@ -39,6 +39,7 @@ export default function RootLayout({
         inter.variable,
       )}
       suppressHydrationWarning
+      suppressContentEditableWarning
     >
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>

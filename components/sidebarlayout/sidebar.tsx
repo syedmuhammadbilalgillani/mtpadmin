@@ -40,7 +40,7 @@ export const SidebarFooterMenu = () => {
   const handleLogout = async () => {
     setIsLoading(true);
     await signOut({ redirect: false });
-    router.push("/admin/login");
+    router.push("/auth/signin");
     router.refresh();
     setIsLoading(false);
   };

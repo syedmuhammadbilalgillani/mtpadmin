@@ -45,3 +45,28 @@ export async function proxyJsonRequest(
   });
 }
 
+export async function proxyMultipartRequest(
+  path: string,
+  method: "POST" | "PATCH",
+  accessToken: string,
+  formData: FormData,
+) {
+  const url = `${backendBaseUrl()}${path}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+    },
+    cache: "no-store",
+    body: formData,
+  });
+
+  const text = await res.text();
+  return new NextResponse(text, {
+    status: res.status,
+    headers: {
+      "content-type": res.headers.get("content-type") ?? "application/json",
+    },
+  });
+}
+
