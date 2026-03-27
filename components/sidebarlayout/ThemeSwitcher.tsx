@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 
 const themes = [
   { value: "light", icon: Sun, label: "Light" },
@@ -31,11 +32,11 @@ const getInitialTheme = (): Theme => {
 
 const ThemeSwitch = () => {
   const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
-
+  const isMounted = useIsMounted();
   useEffect(() => {
     const root = document.documentElement;
     const systemDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
     const appliedTheme =
       theme === "system" ? (systemDark ? "dark" : "light") : theme;
@@ -53,8 +54,10 @@ const ThemeSwitch = () => {
 
   const currentTheme = useMemo(
     () => themes.find((t) => t.value === theme),
-    [theme]
+    [theme],
   );
+
+  if (!isMounted) return null;
 
   return (
     <DropdownMenu>

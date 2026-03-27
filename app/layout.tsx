@@ -38,10 +38,8 @@ export default function RootLayout({
         "font-sans",
         inter.variable,
       )}
-      suppressHydrationWarning
-      suppressContentEditableWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body suppressHydrationWarning suppressContentEditableWarning className="min-h-full flex flex-col">
         <AuthSessionProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </AuthSessionProvider>

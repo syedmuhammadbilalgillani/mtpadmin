@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import { useEffect, useState } from "react";
 
 const themes = [
   { value: "light", icon: "fas fa-sun text-yellow-500" },
@@ -22,11 +22,13 @@ const getInitialTheme = (): Theme => {
 
 const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme] = useState<Theme>(getInitialTheme());
-
   useEffect(() => {
     const root = document.documentElement;
-    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const appliedTheme = theme === "system" ? (systemDark ? "dark" : "light") : theme;
+    const systemDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const appliedTheme =
+      theme === "system" ? (systemDark ? "dark" : "light") : theme;
 
     root.setAttribute("data-theme", appliedTheme);
     root.classList.toggle("dark", appliedTheme === "dark");
@@ -34,7 +36,6 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("theme", appliedTheme);
     Cookies.set("theme", theme, { expires: 365 });
   }, [theme]);
-
   return <>{children}</>;
 };
 
