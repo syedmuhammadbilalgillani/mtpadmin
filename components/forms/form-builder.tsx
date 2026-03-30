@@ -6,7 +6,10 @@ import {
   DynamicForm,
   type DynamicField,
   type DynamicFormSection,
+  type DynamicFormProps,
 } from "@/components/forms/dynamic-form"
+
+import type { FieldValues } from "react-hook-form"
 
 type DemoFormValues = {
   firstName: string
@@ -252,7 +255,16 @@ const formSections: DynamicFormSection<DemoFormValues>[] = [
   },
 ]
 
-export default function FormBuilder() {
+/**
+ * Reusable wrapper around `DynamicForm` so admin modules can use a single entrypoint.
+ */
+export function FormBuilder<TFieldValues extends FieldValues>(
+  props: DynamicFormProps<TFieldValues>,
+) {
+  return <DynamicForm {...props} />
+}
+
+export default function FormBuilderDemo() {
   const [payloadPreview, setPayloadPreview] = React.useState<string>("")
 
   return (

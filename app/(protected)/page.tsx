@@ -13,6 +13,11 @@ const modules = [
       "Manage marketplace attributes, enum options, and category-attribute mappings.",
     href: "/admin/modules/marketplace",
   },
+  {
+    title: "City Module",
+    description: "Manage cities CRUD (name, state/province, country) in one place.",
+    href: "/admin/modules/city",
+  },
 ];
 
 export default function Home() {

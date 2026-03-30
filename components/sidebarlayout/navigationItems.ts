@@ -1,5 +1,6 @@
 import {
   Boxes,
+  MapPin,
   ShoppingBag,
   Tags
 } from "lucide-react";
@@ -20,6 +21,13 @@ export const navigation = [
         title: "Marketplace",
         url: "/modules/marketplace",
         icon: ShoppingBag,
+        isActive: false,
+        requiredPermissions: [Permission.READ_CATEGORY],
+      },
+      {
+        title: "Cities",
+        url: "/modules/city",
+        icon: MapPin,
         isActive: false,
         requiredPermissions: [Permission.READ_CATEGORY],
       },
