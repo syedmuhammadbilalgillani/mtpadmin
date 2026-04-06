@@ -10,7 +10,7 @@ export async function PATCH(
   if (!session.ok) return session.unauthorized;
   const body = await req.json();
   return proxyJsonRequest(
-    `/api/v1/admin/marketplace/category-attributes/${id}`,
+    `/admin/marketplace/category-attributes/${id}`,
     "PATCH",
     session.accessToken,
     body,
@@ -25,7 +25,7 @@ export async function DELETE(
   const session = await getAccessTokenOrResponse();
   if (!session.ok) return session.unauthorized;
   return proxyJsonRequest(
-    `/api/v1/admin/marketplace/category-attributes/${id}`,
+    `/admin/marketplace/category-attributes/${id}`,
     "DELETE",
     session.accessToken,
   );

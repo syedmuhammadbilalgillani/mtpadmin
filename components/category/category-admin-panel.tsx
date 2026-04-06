@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { DynamicForm, type DynamicField } from "@/components/forms/dynamic-form";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 type Category = {
@@ -21,26 +21,17 @@ type Category = {
   imageUrl?: string | null;
   backgroundImageUrl?: string | null;
   postImages?: string[] | null;
+  quantityDimension?: string | null;
+  quantityAllowedUnits?: string[] | null;
+  quantityDefaultUnit?: string | null;
+  priceCurrency?: string | null;
+  pricePerDimension?: string | null;
+  priceAllowedPerUnits?: string[] | null;
+  priceDefaultPerUnit?: string | null;
 };
 
 type CategoryListResponse = {
   data: Category[];
-};
-
-type CreateCategoryValues = {
-  name: string;
-  slug: string;
-  description: string;
-  imageUrl: string;
-  backgroundImageUrl: string;
-};
-
-type UpdateCategoryValues = {
-  name: string;
-  slug: string;
-  description: string;
-  imageUrl: string;
-  backgroundImageUrl: string;
 };
 
 type ReplacePostImagesValues = {
@@ -78,17 +69,10 @@ export default function CategoryAdminPanel() {
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState("");
   const [selectedCategoryImages, setSelectedCategoryImages] = React.useState<string[]>([]);
-  const [editingCategory, setEditingCategory] = React.useState<Category | null>(null);
   const [message, setMessage] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = React.useState(false);
   const [isPostImagesDialogOpen, setIsPostImagesDialogOpen] = React.useState(false);
 
-  const createImageRef = React.useRef<HTMLInputElement>(null);
-  const createBackgroundImageRef = React.useRef<HTMLInputElement>(null);
-  const updateImageRef = React.useRef<HTMLInputElement>(null);
-  const updateBackgroundImageRef = React.useRef<HTMLInputElement>(null);
   const postImagesRef = React.useRef<HTMLInputElement>(null);
 
   const selectedCategory = React.useMemo(
@@ -136,92 +120,6 @@ export default function CategoryAdminPanel() {
     void loadCategoryPostImages(selectedCategoryId);
   }, [loadCategoryPostImages, selectedCategoryId]);
 
-  const createFields = React.useMemo<DynamicField<CreateCategoryValues>[]>(
-    () => [
-      {
-        type: "input",
-        name: "name",
-        label: "Category Name",
-        placeholder: "Coal",
-        rules: { required: "Name is required" },
-        colSpan: 6,
-      },
-      {
-        type: "input",
-        name: "slug",
-        label: "Slug",
-        placeholder: "coal",
-        rules: { required: "Slug is required" },
-        colSpan: 6,
-      },
-      {
-        type: "textarea",
-        name: "description",
-        label: "Description",
-        placeholder: "Category description",
-        colSpan: 12,
-      },
-      {
-        type: "input",
-        name: "imageUrl",
-        label: "Image URL (optional)",
-        placeholder: "https://...",
-        colSpan: 6,
-      },
-      {
-        type: "input",
-        name: "backgroundImageUrl",
-        label: "Background Image URL (optional)",
-        placeholder: "https://...",
-        colSpan: 6,
-      },
-    ],
-    [],
-  );
-
-  const updateFields = React.useMemo<DynamicField<UpdateCategoryValues>[]>(
-    () => [
-      {
-        type: "input",
-        name: "name",
-        label: "Name",
-        placeholder: "Updated name",
-        rules: { required: "Name is required" },
-        colSpan: 6,
-      },
-      {
-        type: "input",
-        name: "slug",
-        label: "Slug",
-        placeholder: "updated-slug",
-        rules: { required: "Slug is required" },
-        colSpan: 6,
-      },
-      {
-        type: "textarea",
-        name: "description",
-        label: "Description",
-        placeholder: "Updated description",
-        colSpan: 12,
-      },
-      {
-        type: "input",
-        name: "imageUrl",
-        label: "Image URL (optional)",
-        placeholder: "https://...",
-        colSpan: 6,
-      },
-      {
-        type: "input",
-        name: "backgroundImageUrl",
-        label: "Background Image URL (optional)",
-        placeholder: "https://...",
-        colSpan: 6,
-      },
-    ],
-    [],
-  );
-
   const replacePostImagesFields = React.useMemo<DynamicField<ReplacePostImagesValues>[]>(
     () => [
       {
@@ -255,11 +153,31 @@ export default function CategoryAdminPanel() {
         priority: 4,
       },
       {
+        id: "quantityPolicy",
+        header: "Quantity Policy",
+        accessor: (row) =>
+          row.quantityDimension
+            ? `${row.quantityDimension} (${(row.quantityAllowedUnits ?? []).join(", ") || "no units"})`
+            : "Not set",
+        type: "text",
+        priority: 5,
+      },
+      {
+        id: "pricePolicy",
+        header: "Price Policy",
+        accessor: (row) =>
+          row.priceCurrency && row.pricePerDimension
+            ? `${row.priceCurrency} / ${row.pricePerDimension} (${(row.priceAllowedPerUnits ?? []).join(", ") || "no units"})`
+            : "Not set",
+        type: "text",
+        priority: 6,
+      },
+      {
         id: "actions",
         header: "Actions",
         type: "actions",
         align: "right",
-        priority: 5,
+        priority: 7,
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
             <Button
@@ -274,16 +192,11 @@ export default function CategoryAdminPanel() {
             >
               View Post Images
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setEditingCategory(row);
-                setIsUpdateDialogOpen(true);
-              }}
-            >
-              Edit
-            </Button>
+            <Link href={`/modules/category/${row.id}/edit`}>
+              <Button size="sm" variant="outline">
+                Edit
+              </Button>
+            </Link>
             <Button
               size="sm"
               variant="destructive"
@@ -322,85 +235,9 @@ export default function CategoryAdminPanel() {
               </p>
             </div>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger render={<Button>Create Category</Button>} />
-              <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                  <DialogTitle>Create Category</DialogTitle>
-                  <DialogDescription>
-                    Fill category details and optionally upload image/background image.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <DynamicForm<CreateCategoryValues>
-                  fields={createFields}
-                  defaultValues={{
-                    name: "",
-                    slug: "",
-                    description: "",
-                    imageUrl: "",
-                    backgroundImageUrl: "",
-                  }}
-                  submitLabel="Create Category"
-                  footer={
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Upload Image (optional)</label>
-                        <input
-                          ref={createImageRef}
-                          type="file"
-                          accept="image/*"
-                          className="w-full rounded-md border px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                          Upload Background Image (optional)
-                        </label>
-                        <input
-                          ref={createBackgroundImageRef}
-                          type="file"
-                          accept="image/*"
-                          className="w-full rounded-md border px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-                  }
-                  onSubmit={async (values) => {
-                    try {
-                      const formData = new FormData();
-                      formData.append("name", values.name.trim());
-                      formData.append("slug", values.slug.trim().toLowerCase());
-                      if (values.description.trim()) {
-                        formData.append("description", values.description.trim());
-                      }
-                      if (values.imageUrl.trim()) {
-                        formData.append("imageUrl", values.imageUrl.trim());
-                      }
-                      if (values.backgroundImageUrl.trim()) {
-                        formData.append("backgroundImageUrl", values.backgroundImageUrl.trim());
-                      }
-                      const imageFile = createImageRef.current?.files?.[0];
-                      const backgroundFile = createBackgroundImageRef.current?.files?.[0];
-                      if (imageFile) formData.append("image", imageFile);
-                      if (backgroundFile) formData.append("backgroundImage", backgroundFile);
-
-                      await request("/api/server/categories", {
-                        method: "POST",
-                        body: formData,
-                      });
-                      if (createImageRef.current) createImageRef.current.value = "";
-                      if (createBackgroundImageRef.current) createBackgroundImageRef.current.value = "";
-                      setMessage("Category created successfully");
-                      setIsCreateDialogOpen(false);
-                      await loadCategories();
-                    } catch (e) {
-                      setMessage(e instanceof Error ? e.message : "Failed to create category");
-                    }
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            <Link href="/modules/category/create">
+              <Button>Create Category</Button>
+            </Link>
           </div>
 
           {message ? (
@@ -418,110 +255,6 @@ export default function CategoryAdminPanel() {
             caption="Admin categories"
           />
         </section>
-
-        <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Update Category</DialogTitle>
-              <DialogDescription>
-                Update details for {editingCategory?.name ?? "selected category"}.
-              </DialogDescription>
-            </DialogHeader>
-
-            <DynamicForm<UpdateCategoryValues>
-              key={editingCategory?.id ?? "edit-category"}
-              fields={updateFields}
-              defaultValues={{
-                name: editingCategory?.name ?? "",
-                slug: editingCategory?.slug ?? "",
-                description: editingCategory?.description ?? "",
-                imageUrl: editingCategory?.imageUrl ?? "",
-                backgroundImageUrl: editingCategory?.backgroundImageUrl ?? "",
-              }}
-              submitLabel="Update Category"
-              footer={
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Upload New Category Image (optional, replaces current image)
-                    </label>
-                    <input
-                      ref={updateImageRef}
-                      type="file"
-                      accept="image/*"
-                      className="w-full rounded-md border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Upload New Background Image (optional, replaces current background image)
-                    </label>
-                    <input
-                      ref={updateBackgroundImageRef}
-                      type="file"
-                      accept="image/*"
-                      className="w-full rounded-md border px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-              }
-              onSubmit={async (values) => {
-                try {
-                  if (!editingCategory?.id) {
-                    throw new Error("No category selected for update");
-                  }
-                  const imageFile = updateImageRef.current?.files?.[0];
-                  const backgroundImageFile =
-                    updateBackgroundImageRef.current?.files?.[0];
-                  if (imageFile || backgroundImageFile) {
-                    const formData = new FormData();
-                    if (imageFile) {
-                      formData.append("image", imageFile);
-                    }
-                    if (backgroundImageFile) {
-                      formData.append("backgroundImage", backgroundImageFile);
-                    }
-                    formData.append("name", values.name.trim());
-                    formData.append("slug", values.slug.trim().toLowerCase());
-                    if (values.description.trim()) {
-                      formData.append("description", values.description.trim());
-                    }
-                    if (values.imageUrl.trim()) formData.append("imageUrl", values.imageUrl.trim());
-                    if (values.backgroundImageUrl.trim()) {
-                      formData.append("backgroundImageUrl", values.backgroundImageUrl.trim());
-                    }
-                    await request(`/api/server/categories/${editingCategory.id}`, {
-                      method: "PATCH",
-                      body: formData,
-                    });
-                  } else {
-                    await request(`/api/server/categories/${editingCategory.id}`, {
-                      method: "PATCH",
-                      body: JSON.stringify({
-                        name: values.name.trim(),
-                        slug: values.slug.trim().toLowerCase(),
-                        description: values.description.trim() || undefined,
-                        imageUrl: values.imageUrl.trim() || undefined,
-                        backgroundImageUrl: values.backgroundImageUrl.trim() || undefined,
-                      }),
-                    });
-                  }
-                  if (updateImageRef.current) updateImageRef.current.value = "";
-                  if (updateBackgroundImageRef.current) {
-                    updateBackgroundImageRef.current.value = "";
-                  }
-                  setMessage("Category updated successfully");
-                  setIsUpdateDialogOpen(false);
-                  setSelectedCategoryId(editingCategory.id);
-                  await loadCategories();
-                  await loadCategoryPostImages(editingCategory.id);
-                } catch (e) {
-                  setMessage(e instanceof Error ? e.message : "Failed to update category");
-                }
-              }}
-            />
-          </DialogContent>
-        </Dialog>
 
         <Dialog open={isPostImagesDialogOpen} onOpenChange={setIsPostImagesDialogOpen}>
           <DialogContent className="max-w-5xl">

@@ -20,12 +20,16 @@ type City = {
   name: string;
   state?: string | null;
   country: string;
+  latitude: number;
+  longitude: number;
 };
 
 type CreateCityValues = {
   name: string;
   state: string;
   country: string;
+  latitude: number;
+  longitude: number;
 };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -118,6 +122,30 @@ export default function CityAdminPanel() {
           required: "Country is required",
           minLength: { value: 1, message: "Country is required" },
           maxLength: { value: 255, message: "Country must be <= 255 characters" },
+        },
+        colSpan: 12,
+      },
+      {
+        type: "input",
+        name: "latitude",
+        label: "Country",
+        placeholder: "40.7128",
+        rules: {
+          required: "Latitude is required",
+          minLength: { value: 1, message: "Latitude is required" },
+          maxLength: { value: 255, message: "Latitude must be <= 255 characters" },
+        },
+        colSpan: 12,
+      },
+      {
+        type: "input",
+        name: "longitude",
+        label: "Longitude",
+        placeholder: "-74.0060",
+        rules: {
+          required: "Longitude is required",
+          minLength: { value: 1, message: "Longitude is required" },
+          maxLength: { value: 255, message: "Longitude must be <= 255 characters" },
         },
         colSpan: 12,
       },

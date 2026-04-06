@@ -128,3 +128,13 @@
     @apply font-sans;
   }
 }
+
+.scrollbar {
+  @apply [&::-webkit-scrollbar]:w-2
+  [&::-webkit-scrollbar]:h-1.5!
+[&::-webkit-scrollbar-track]:bg-white [&::-webkit-scrollbar-track]:rounded-full
+[&::-webkit-scrollbar-thumb]:bg-black [&::-webkit-scrollbar-thumb]:rounded-full
+  [&::-webkit-scrollbar-thumb]:cursor-pointer
+dark:[&::-webkit-scrollbar-track]:bg-neutral-700
+dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500;
+}

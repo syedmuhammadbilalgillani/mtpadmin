@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { DynamicForm, type DynamicField } from "@/components/forms/dynamic-form";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
+import { Button } from "@/components/ui/button";
 
 type AttributeOption = {
   id: string;
@@ -19,6 +21,9 @@ type Attribute = {
   isRequired: boolean;
   isFilterable: boolean;
   unit: string | null;
+  dimension?: string | null;
+  allowedUnits?: string[] | null;
+  defaultUnit?: string | null;
   options?: AttributeOption[];
 };
 
@@ -32,21 +37,28 @@ type CategoryField = {
   required: boolean;
   filterable: boolean;
   unit: string | null;
+  dimension?: string | null;
+  allowedUnits?: string[];
+  defaultUnit?: string | null;
   options: { value: string; label: string }[];
 };
 
 type CategoryAttributesResponse = {
-  category: { id: string; name: string; slug: string };
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    fixedFields?: {
+      quantity: { dimension: string | null; allowedUnits: string[]; defaultUnit: string | null };
+      price: {
+        currency: string | null;
+        perDimension: string | null;
+        allowedPerUnits: string[];
+        defaultPerUnit: string | null;
+      };
+    };
+  };
   fields: CategoryField[];
-};
-
-type CreateAttributeValues = {
-  name: string;
-  slug: string;
-  dataType: "string" | "number" | "enum";
-  unit: string;
-  isRequired: boolean;
-  isFilterable: boolean;
 };
 
 type AddOptionValues = {
@@ -62,6 +74,9 @@ type MapAttributeValues = {
   sortOrder: number;
   isRequiredOverride: "inherit" | "true" | "false";
   isFilterableOverride: "inherit" | "true" | "false";
+  dimensionOverride: "inherit" | "mass" | "volume" | "count" | "length" | "area" | "energy_density" | "percentage";
+  allowedUnitsOverrideText: string;
+  defaultUnitOverride: string;
 };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -93,6 +108,7 @@ export default function MarketplaceAdminPanel() {
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState("");
   const [categoryFields, setCategoryFields] = React.useState<CategoryField[]>([]);
+  const [categorySchema, setCategorySchema] = React.useState<CategoryAttributesResponse["category"] | null>(null);
   const [message, setMessage] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -124,8 +140,10 @@ export default function MarketplaceAdminPanel() {
       const response = await request<CategoryAttributesResponse>(
         `/api/server/marketplace/categories/${categoryId}/attributes`,
       );
+      setCategorySchema(response.category ?? null);
       setCategoryFields(response.fields ?? []);
     } catch (e) {
+      setCategorySchema(null);
       setCategoryFields([]);
       setMessage(e instanceof Error ? e.message : "Failed to load category mappings");
     }
@@ -144,58 +162,26 @@ export default function MarketplaceAdminPanel() {
     [attributes],
   );
 
-  const attributeFormFields = React.useMemo<DynamicField<CreateAttributeValues>[]>(
+  const dimensionOptions = React.useMemo(
     () => [
-      {
-        type: "input",
-        name: "name",
-        label: "Attribute Name",
-        placeholder: "GCV",
-        rules: { required: "Name is required" },
-        colSpan: 6,
-      },
-      {
-        type: "input",
-        name: "slug",
-        label: "Slug",
-        placeholder: "gcv",
-        rules: { required: "Slug is required" },
-        colSpan: 6,
-      },
-      {
-        type: "select",
-        name: "dataType",
-        label: "Data Type",
-        options: [
-          { label: "String", value: "string" },
-          { label: "Number", value: "number" },
-          { label: "Enum", value: "enum" },
-        ],
-        rules: { required: "Data type is required" },
-        colSpan: 6,
-      },
-      {
-        type: "input",
-        name: "unit",
-        label: "Unit (optional)",
-        placeholder: "kcal/kg",
-        colSpan: 6,
-      },
-      {
-        type: "switch",
-        name: "isRequired",
-        label: "Required by default",
-        colSpan: 6,
-      },
-      {
-        type: "switch",
-        name: "isFilterable",
-        label: "Filterable",
-        colSpan: 6,
-      },
+      { label: "Inherit / Not Set", value: "inherit" },
+      { label: "Mass", value: "mass" },
+      { label: "Volume", value: "volume" },
+      { label: "Count", value: "count" },
+      { label: "Length", value: "length" },
+      { label: "Area", value: "area" },
+      { label: "Energy Density", value: "energy_density" },
+      { label: "Percentage", value: "percentage" },
     ],
     [],
   );
+
+  const parseUnitsText = React.useCallback((value: string): string[] => {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }, []);
 
   const optionFormFields = React.useMemo<DynamicField<AddOptionValues>[]>(
     () => [
@@ -238,8 +224,12 @@ export default function MarketplaceAdminPanel() {
     [enumAttributes],
   );
 
-  const mappingFormFields = React.useMemo<DynamicField<MapAttributeValues>[]>(
+  const mappingSections = React.useMemo(
     () => [
+      {
+        id: "mapping-step-1",
+        title: "Step 1: Select Category + Attribute",
+        fields: [
       {
         type: "select",
         name: "categoryId",
@@ -262,6 +252,13 @@ export default function MarketplaceAdminPanel() {
         rules: { required: "Select an attribute" },
         colSpan: 6,
       },
+        ] satisfies DynamicField<MapAttributeValues>[],
+      },
+      {
+        id: "mapping-step-2",
+        title: "Step 2: Override Rules",
+        description: "Use 'inherit' unless this category needs a different behavior.",
+        fields: [
       {
         type: "input",
         name: "sortOrder",
@@ -292,8 +289,31 @@ export default function MarketplaceAdminPanel() {
         ],
         colSpan: 12,
       },
+      {
+        type: "select",
+        name: "dimensionOverride",
+        label: "Dimension Override",
+        options: dimensionOptions,
+        colSpan: 6,
+      },
+      {
+        type: "input",
+        name: "defaultUnitOverride",
+        label: "Default Unit Override",
+        placeholder: "kg",
+        colSpan: 6,
+      },
+      {
+        type: "input",
+        name: "allowedUnitsOverrideText",
+        label: "Allowed Units Override (comma-separated)",
+        placeholder: "kg, g, ton",
+        colSpan: 12,
+      },
+        ] satisfies DynamicField<MapAttributeValues>[],
+      },
     ],
-    [attributes, categories],
+    [attributes, categories, dimensionOptions],
   );
 
   const attributeColumns = React.useMemo<DataTableColumn<Attribute>[]>(
@@ -333,12 +353,42 @@ export default function MarketplaceAdminPanel() {
         priority: 6,
       },
       {
+        id: "dimension",
+        header: "Dimension",
+        accessor: (row) => row.dimension ?? "—",
+        type: "text",
+        priority: 7,
+      },
+      {
+        id: "allowedUnits",
+        header: "Allowed Units",
+        accessor: (row) => (row.allowedUnits ?? []).join(", ") || "—",
+        type: "text",
+        priority: 8,
+      },
+      {
         id: "options",
         header: "Options",
         accessor: (row) => row.options?.length ?? 0,
         type: "number",
         align: "right",
-        priority: 7,
+        priority: 9,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        type: "actions",
+        align: "right",
+        priority: 10,
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <Link href={`/modules/marketplace/${row.id}/edit`}>
+              <Button size="sm" variant="outline">
+                Edit
+              </Button>
+            </Link>
+          </div>
+        ),
       },
     ],
     [],
@@ -371,6 +421,13 @@ export default function MarketplaceAdminPanel() {
         align: "right",
         priority: 6,
       },
+      {
+        id: "units",
+        header: "Units",
+        accessor: (row) => (row.allowedUnits ?? []).join(", ") || row.unit || "—",
+        type: "text",
+        priority: 7,
+      },
     ],
     [],
   );
@@ -388,40 +445,15 @@ export default function MarketplaceAdminPanel() {
           ) : null}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <section className="rounded-xl border bg-background p-4 md:p-6">
-            <h2 className="mb-4 text-lg font-semibold">Create Attribute</h2>
-            <DynamicForm<CreateAttributeValues>
-              fields={attributeFormFields}
-              defaultValues={{
-                name: "",
-                slug: "",
-                dataType: "string",
-                unit: "",
-                isRequired: false,
-                isFilterable: false,
-              }}
-              submitLabel="Create Attribute"
-              onSubmit={async (values) => {
-                try {
-                  await request("/api/server/marketplace/attributes", {
-                    method: "POST",
-                    body: JSON.stringify({
-                      name: values.name.trim(),
-                      slug: values.slug.trim().toLowerCase(),
-                      dataType: values.dataType,
-                      unit: values.unit.trim() || undefined,
-                      isRequired: values.isRequired,
-                      isFilterable: values.isFilterable,
-                    }),
-                  });
-                  setMessage("Attribute created successfully");
-                  await loadBaseData();
-                } catch (e) {
-                  setMessage(e instanceof Error ? e.message : "Failed to create attribute");
-                }
-              }}
-            />
+            <h2 className="mb-2 text-lg font-semibold">Create Attribute</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Use the guided 3-step form to define attribute identity, unit rules, and behavior.
+            </p>
+            <Link href="/modules/marketplace/create">
+              <Button>Create Attribute</Button>
+            </Link>
           </section>
 
           <section className="rounded-xl border bg-background p-4 md:p-6">
@@ -452,13 +484,16 @@ export default function MarketplaceAdminPanel() {
           <section className="rounded-xl border bg-background p-4 md:p-6">
             <h2 className="mb-4 text-lg font-semibold">Map Category Attribute</h2>
             <DynamicForm<MapAttributeValues>
-              fields={mappingFormFields}
+              sections={mappingSections}
               defaultValues={{
                 categoryId: selectedCategoryId || "",
                 attributeId: "",
                 sortOrder: 0,
                 isRequiredOverride: "inherit",
                 isFilterableOverride: "inherit",
+                dimensionOverride: "inherit",
+                allowedUnitsOverrideText: "",
+                defaultUnitOverride: "",
               }}
               submitLabel="Create Mapping"
               onSubmit={async (values) => {
@@ -471,6 +506,16 @@ export default function MarketplaceAdminPanel() {
                   }
                   if (values.isFilterableOverride !== "inherit") {
                     body.isFilterableOverride = values.isFilterableOverride === "true";
+                  }
+                  if (values.dimensionOverride !== "inherit") {
+                    body.dimensionOverride = values.dimensionOverride;
+                  }
+                  const allowedUnitsOverride = parseUnitsText(values.allowedUnitsOverrideText);
+                  if (allowedUnitsOverride.length > 0) {
+                    body.allowedUnitsOverride = allowedUnitsOverride;
+                  }
+                  if (values.defaultUnitOverride.trim()) {
+                    body.defaultUnitOverride = values.defaultUnitOverride.trim();
                   }
                   await request(
                     `/api/server/marketplace/categories/${values.categoryId}/attributes/${values.attributeId}`,
@@ -534,6 +579,24 @@ export default function MarketplaceAdminPanel() {
             getRowId={(row) => row.id}
             caption="Category dynamic fields"
           />
+          {categorySchema?.fixedFields ? (
+            <div className="rounded-md border p-3 text-sm">
+              <p className="font-medium">Selected Category Fixed Field Rules</p>
+              <p className="text-muted-foreground">
+                Quantity:{" "}
+                {categorySchema.fixedFields.quantity.dimension
+                  ? `${categorySchema.fixedFields.quantity.dimension} (${categorySchema.fixedFields.quantity.allowedUnits.join(", ") || "no units"})`
+                  : "Not set"}
+              </p>
+              <p className="text-muted-foreground">
+                Price:{" "}
+                {categorySchema.fixedFields.price.currency &&
+                categorySchema.fixedFields.price.perDimension
+                  ? `${categorySchema.fixedFields.price.currency} / ${categorySchema.fixedFields.price.perDimension} (${categorySchema.fixedFields.price.allowedPerUnits.join(", ") || "no units"})`
+                  : "Not set"}
+              </p>
+            </div>
+          ) : null}
         </section>
       </section>
     </main>
