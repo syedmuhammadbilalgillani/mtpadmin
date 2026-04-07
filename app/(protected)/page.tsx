@@ -5,18 +5,18 @@ const modules = [
     title: "Category Module",
     description:
       "Manage category CRUD, upload images, and maintain category post images in one place.",
-    href: "/admin/modules/category",
+    href: "/modules/category",
   },
   {
     title: "Marketplace Module",
     description:
       "Manage marketplace attributes, enum options, and category-attribute mappings.",
-    href: "/admin/modules/marketplace",
+    href: "/modules/marketplace",
   },
   {
     title: "City Module",
     description: "Manage cities CRUD (name, state/province, country) in one place.",
-    href: "/admin/modules/city",
+    href: "/modules/city",
   },
 ];
 

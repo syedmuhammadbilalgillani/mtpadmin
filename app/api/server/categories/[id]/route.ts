@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+
 import {
   getAccessTokenOrResponse,
   proxyJsonRequest,
@@ -12,7 +13,7 @@ export async function GET(
   const { id } = await context.params;
   const session = await getAccessTokenOrResponse();
   if (!session.ok) return session.unauthorized;
-  return proxyJsonRequest(`/category/${id}`, "GET", session.accessToken);
+  return proxyJsonRequest(`/categories/${id}`, "GET", session.accessToken);
 }
 
 export async function PATCH(
@@ -25,12 +26,12 @@ export async function PATCH(
 
   const contentType = req.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
-    const body = await req.formData();
-    return proxyMultipartRequest(`/category/${id}`, "PATCH", session.accessToken, body);
+    const formData = await req.formData();
+    return proxyMultipartRequest(`/categories/${id}`, "PATCH", session.accessToken, formData);
   }
 
   const body = await req.json();
-  return proxyJsonRequest(`/category/${id}`, "PATCH", session.accessToken, body);
+  return proxyJsonRequest(`/categories/${id}`, "PATCH", session.accessToken, body);
 }
 
 export async function DELETE(
@@ -40,5 +41,6 @@ export async function DELETE(
   const { id } = await context.params;
   const session = await getAccessTokenOrResponse();
   if (!session.ok) return session.unauthorized;
-  return proxyJsonRequest(`/category/${id}`, "DELETE", session.accessToken);
+  return proxyJsonRequest(`/categories/${id}`, "DELETE", session.accessToken);
 }
+

@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { DynamicForm, type DynamicField } from "@/components/forms/dynamic-form";
+import { FormBuilder } from "@/components/forms/form-builder";
+import type { DynamicField } from "@/components/forms/dynamic-form";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -12,62 +14,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  imageUrl?: string | null;
-  backgroundImageUrl?: string | null;
-  postImages?: string[] | null;
-  quantityDimension?: string | null;
-  quantityAllowedUnits?: string[] | null;
-  quantityDefaultUnit?: string | null;
-  priceCurrency?: string | null;
-  pricePerDimension?: string | null;
-  priceAllowedPerUnits?: string[] | null;
-  priceDefaultPerUnit?: string | null;
-};
-
-type CategoryListResponse = {
-  data: Category[];
-};
+import {
+  deleteCategory,
+  deleteCategoryPostImage,
+  getCategoryPostImages,
+  listCategories,
+  replaceCategoryPostImages,
+  type AdminCategory as Category,
+  uploadCategoryPostImages,
+} from "@/lib/categories";
 
 type ReplacePostImagesValues = {
   postImagesText: string;
 };
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
-  const headers = new Headers(init?.headers);
-  if (!isFormData && !headers.has("content-type")) {
-    headers.set("content-type", "application/json");
-  }
-
-  const res = await fetch(url, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
-  const text = await res.text();
-  const data = text ? (JSON.parse(text) as unknown) : {};
-  if (!res.ok) {
-    const message =
-      typeof data === "object" &&
-      data &&
-      "message" in data &&
-      typeof (data as { message?: unknown }).message === "string"
-        ? (data as { message: string }).message
-        : "Request failed";
-    throw new Error(message);
-  }
-  return data as T;
-}
-
 export default function CategoryAdminPanel() {
   const [categories, setCategories] = React.useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = React.useState("");
+  const [query, setQuery] = React.useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<number | null>(null);
   const [selectedCategoryImages, setSelectedCategoryImages] = React.useState<string[]>([]);
   const [message, setMessage] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -83,10 +47,9 @@ export default function CategoryAdminPanel() {
   const loadCategories = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await request<CategoryListResponse>("/api/server/categories");
-      const list = response.data ?? [];
+      const list = await listCategories();
       setCategories(list);
-      if (!selectedCategoryId && list.length > 0) {
+      if (selectedCategoryId === null && list.length > 0) {
         setSelectedCategoryId(list[0].id);
       }
     } catch (e) {
@@ -96,16 +59,13 @@ export default function CategoryAdminPanel() {
     }
   }, [selectedCategoryId]);
 
-  const loadCategoryPostImages = React.useCallback(async (categoryId: string) => {
+  const loadCategoryPostImages = React.useCallback(async (categoryId: number | null) => {
     if (!categoryId) {
       setSelectedCategoryImages([]);
       return;
     }
     try {
-      const response = await request<{ postImages: string[] }>(
-        `/api/server/categories/${categoryId}/post-images`,
-      );
-      setSelectedCategoryImages(response.postImages ?? []);
+      setSelectedCategoryImages(await getCategoryPostImages(categoryId));
     } catch (e) {
       setSelectedCategoryImages([]);
       setMessage(e instanceof Error ? e.message : "Failed to load category post images");
@@ -133,16 +93,27 @@ export default function CategoryAdminPanel() {
     [],
   );
 
+  const filteredCategories = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter((c) => {
+      return (
+        c.name?.toLowerCase().includes(q) ||
+        (c.description ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [categories, query]);
+
   const categoryColumns = React.useMemo<DataTableColumn<Category>[]>(
     () => [
       { id: "name", header: "Name", accessor: (row) => row.name, type: "text", priority: 1 },
-      { id: "slug", header: "Slug", accessor: (row) => row.slug, type: "text", priority: 2 },
       {
-        id: "image",
-        header: "Image",
-        accessor: (row) => row.imageUrl ?? "",
+        id: "iconImageUrl",
+        header: "Icon",
+        accessor: (row) => row.iconImageUrl ?? "",
         type: "image",
-        priority: 3,
+        priority: 2,
+        hideBelow: "md",
       },
       {
         id: "postImagesCount",
@@ -150,34 +121,22 @@ export default function CategoryAdminPanel() {
         accessor: (row) => row.postImages?.length ?? 0,
         type: "number",
         align: "right",
+        priority: 3,
+      },
+      {
+        id: "backgroundImageUrl",
+        header: "Background",
+        accessor: (row) => row.backgroundImageUrl ?? "",
+        type: "image",
         priority: 4,
-      },
-      {
-        id: "quantityPolicy",
-        header: "Quantity Policy",
-        accessor: (row) =>
-          row.quantityDimension
-            ? `${row.quantityDimension} (${(row.quantityAllowedUnits ?? []).join(", ") || "no units"})`
-            : "Not set",
-        type: "text",
-        priority: 5,
-      },
-      {
-        id: "pricePolicy",
-        header: "Price Policy",
-        accessor: (row) =>
-          row.priceCurrency && row.pricePerDimension
-            ? `${row.priceCurrency} / ${row.pricePerDimension} (${(row.priceAllowedPerUnits ?? []).join(", ") || "no units"})`
-            : "Not set",
-        type: "text",
-        priority: 6,
+        hideBelow: "lg",
       },
       {
         id: "actions",
         header: "Actions",
         type: "actions",
         align: "right",
-        priority: 7,
+        priority: 5,
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
             <Button
@@ -202,10 +161,13 @@ export default function CategoryAdminPanel() {
               variant="destructive"
               onClick={async () => {
                 try {
-                  await request(`/api/server/categories/${row.id}`, { method: "DELETE" });
+                  const ok = window.confirm(`Delete category "${row.name}"? This cannot be undone.`);
+                  if (!ok) return;
+
+                  await deleteCategory(row.id);
                   setMessage("Category deleted successfully");
                   if (selectedCategoryId === row.id) {
-                    setSelectedCategoryId("");
+                    setSelectedCategoryId(null);
                     setSelectedCategoryImages([]);
                   }
                   await loadCategories();
@@ -231,13 +193,21 @@ export default function CategoryAdminPanel() {
             <div>
               <h1 className="text-2xl font-semibold">Category Admin</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Category CRUD and post images in a simpler flow.
+                Category CRUD with post image management.
               </p>
             </div>
 
-            <Link href="/modules/category/create">
-              <Button>Create Category</Button>
-            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search categories..."
+                className="w-full sm:w-72"
+              />
+              <Link href="/modules/category/create">
+                <Button className="w-full sm:w-auto">Create Category</Button>
+              </Link>
+            </div>
           </div>
 
           {message ? (
@@ -246,11 +216,16 @@ export default function CategoryAdminPanel() {
         </div>
 
         <section className="rounded-xl border bg-background p-4 md:p-6">
-          <h2 className="mb-4 text-lg font-semibold">Categories</h2>
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+            <h2 className="text-lg font-semibold">Categories</h2>
+            <p className="text-xs text-muted-foreground">
+              Showing {filteredCategories.length} of {categories.length}
+            </p>
+          </div>
           <DataTable<Category>
-            data={categories}
+            data={filteredCategories}
             columns={categoryColumns}
-            getRowId={(row) => row.id}
+            getRowId={(row) => String(row.id)}
             isLoading={isLoading}
             caption="Admin categories"
           />
@@ -262,7 +237,7 @@ export default function CategoryAdminPanel() {
               <DialogTitle>Category Post Images</DialogTitle>
               <DialogDescription>
                 {selectedCategory
-                  ? `Manage post images for ${selectedCategory.name} (${selectedCategory.slug}).`
+                  ? `Manage post images for ${selectedCategory.name}.`
                   : "Select a category from table and click 'View Post Images'."}
               </DialogDescription>
             </DialogHeader>
@@ -287,12 +262,7 @@ export default function CategoryAdminPanel() {
                         if (!files || files.length === 0) {
                           throw new Error("Select at least one image");
                         }
-                        const formData = new FormData();
-                        Array.from(files).forEach((file) => formData.append("files", file));
-                        await request(`/api/server/categories/${selectedCategoryId}/post-images`, {
-                          method: "POST",
-                          body: formData,
-                        });
+                        await uploadCategoryPostImages(selectedCategoryId, files);
                         if (postImagesRef.current) postImagesRef.current.value = "";
                         setMessage("Post images uploaded successfully");
                         await loadCategories();
@@ -309,7 +279,7 @@ export default function CategoryAdminPanel() {
                 </div>
               </div>
 
-              <DynamicForm<ReplacePostImagesValues>
+              <FormBuilder<ReplacePostImagesValues>
                 key={`replace-post-images-${selectedCategoryId}-${selectedCategoryImages.length}`}
                 fields={replacePostImagesFields}
                 defaultValues={{ postImagesText: selectedCategoryImages.join("\n") }}
@@ -321,10 +291,7 @@ export default function CategoryAdminPanel() {
                       .split("\n")
                       .map((line) => line.trim())
                       .filter(Boolean);
-                    await request(`/api/server/categories/${selectedCategoryId}/post-images`, {
-                      method: "PATCH",
-                      body: JSON.stringify({ postImages }),
-                    });
+                    await replaceCategoryPostImages(selectedCategoryId, postImages);
                     setMessage("Post images list updated successfully");
                     await loadCategories();
                     await loadCategoryPostImages(selectedCategoryId);
@@ -361,13 +328,7 @@ export default function CategoryAdminPanel() {
                         onClick={async () => {
                           try {
                             if (!selectedCategoryId) throw new Error("Load a category first");
-                            await request(
-                              `/api/server/categories/${selectedCategoryId}/post-images`,
-                              {
-                                method: "DELETE",
-                                body: JSON.stringify({ imageUrl }),
-                              },
-                            );
+                            await deleteCategoryPostImage(selectedCategoryId, imageUrl);
                             setMessage("Post image deleted successfully");
                             await loadCategories();
                             await loadCategoryPostImages(selectedCategoryId);
