@@ -1,9 +1,4 @@
-import {
-  Boxes,
-  MapPin,
-  ShoppingBag,
-  Tags
-} from "lucide-react";
+import { Boxes, FileText, MapPin, Tags } from "lucide-react";
 import { Permission } from "./permissions";
 export const navigation = [
   {
@@ -18,9 +13,9 @@ export const navigation = [
         requiredPermissions: [Permission.READ_CATEGORY],
       },
       {
-        title: "Marketplace",
-        url: "/modules/marketplace",
-        icon: ShoppingBag,
+        title: "Posts",
+        url: "/modules/post",
+        icon: FileText,
         isActive: false,
         requiredPermissions: [Permission.READ_CATEGORY],
       },

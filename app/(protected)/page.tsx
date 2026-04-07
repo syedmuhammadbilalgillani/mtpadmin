@@ -8,6 +8,12 @@ const modules = [
     href: "/modules/category",
   },
   {
+    title: "Post Module",
+    description:
+      "Manage post CRUD with dynamic category fields and basic filters.",
+    href: "/modules/post",
+  },
+  {
     title: "Marketplace Module",
     description:
       "Manage marketplace attributes, enum options, and category-attribute mappings.",
