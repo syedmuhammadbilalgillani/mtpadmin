@@ -9,7 +9,7 @@ export async function GET(
   const { id } = await context.params;
   const session = await getAccessTokenOrResponse();
   if (!session.ok) return session.unauthorized;
-  return proxyJsonRequest(`/post/${id}`, "GET", session.accessToken);
+  return proxyJsonRequest(`/post/admin/${id}`, "GET", session.accessToken);
 }
 
 export async function PATCH(

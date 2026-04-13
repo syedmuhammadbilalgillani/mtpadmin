@@ -10,8 +10,18 @@ import type { DynamicField } from "@/components/forms/dynamic-form";
 import { FormBuilder } from "@/components/forms/form-builder";
 import { Button } from "@/components/ui/button";
 import { requestJson } from "@/lib/request";
-import { getPost, updatePost, type AdminListingType, type AdminPostStatus } from "@/lib/posts";
-import { getCategory, listCategories, type AdminCategory, type AdminCategoryField } from "@/lib/categories";
+import {
+  getPost,
+  updatePost,
+  type AdminListingType,
+  type AdminPostStatus,
+} from "@/lib/posts";
+import {
+  getCategory,
+  listCategories,
+  type AdminCategory,
+  type AdminCategoryField,
+} from "@/lib/categories";
 
 type City = { id: string; name: string };
 
@@ -47,7 +57,9 @@ export default function PostEditPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [categories, setCategories] = React.useState<AdminCategory[]>([]);
   const [cities, setCities] = React.useState<City[]>([]);
-  const [categoryFields, setCategoryFields] = React.useState<AdminCategoryField[]>([]);
+  const [categoryFields, setCategoryFields] = React.useState<
+    AdminCategoryField[]
+  >([]);
 
   const form = useForm<PostFormValues>({
     defaultValues: {
@@ -68,14 +80,18 @@ export default function PostEditPage() {
       try {
         setCategories(await listCategories());
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Failed to load categories");
+        setMessage(
+          e instanceof Error ? e.message : "Failed to load categories",
+        );
       }
 
       try {
         const res = await requestJson<unknown>("/api/server/city");
         const list = Array.isArray(res)
           ? (res as City[])
-          : typeof res === "object" && res && "data" in (res as Record<string, unknown>)
+          : typeof res === "object" &&
+              res &&
+              "data" in (res as Record<string, unknown>)
             ? (((res as { data?: unknown }).data as City[]) ?? [])
             : [];
         setCities(list);
@@ -93,9 +109,13 @@ export default function PostEditPage() {
       try {
         const post = await getPost(postId);
         const categoryId =
-          typeof post.categoryId === "object" && post.categoryId ? post.categoryId.id : Number(post.categoryId);
+          typeof post.categoryId === "object" && post.categoryId
+            ? post.categoryId.id
+            : Number(post.categoryId);
         const locationId =
-          typeof post.locationId === "object" && post.locationId ? post.locationId.id : String(post.locationId ?? "");
+          typeof post.locationId === "object" && post.locationId
+            ? post.locationId.id
+            : String(post.locationId ?? "");
 
         form.reset({
           title: post.title ?? "",
@@ -127,7 +147,9 @@ export default function PostEditPage() {
       }
       try {
         const category = await getCategory(catId);
-        const fields = [...(category.fields ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const fields = [...(category.fields ?? [])].sort(
+          (a, b) => (a.order ?? 0) - (b.order ?? 0),
+        );
         setCategoryFields(fields);
 
         // Try to populate existing values
@@ -158,19 +180,60 @@ export default function PostEditPage() {
     if (postId) void loadFieldsAndValues();
   }, [form, postId, selectedCategoryId]);
 
-  const baseSections = React.useMemo<DynamicFormSection<PostFormValues>[]>(() => {
-    const categoryOptions = categories.map((c) => ({ label: c.name, value: String(c.id) }));
+  const baseSections = React.useMemo<
+    DynamicFormSection<PostFormValues>[]
+  >(() => {
+    const categoryOptions = categories.map((c) => ({
+      label: c.name,
+      value: String(c.id),
+    }));
     const cityOptions = cities.map((c) => ({ label: c.name, value: c.id }));
     return [
       {
         id: "base",
         title: "Post Details",
         fields: [
-          { type: "input", name: "title", label: "Title", rules: { required: "Title is required" }, colSpan: 12 },
-          { type: "textarea", name: "shortDescription", label: "Short Description", rules: { required: "Short description is required" }, colSpan: 12 },
-          { type: "select", name: "categoryId", label: "Category", options: categoryOptions, rules: { required: "Category is required" }, colSpan: 6 },
-          { type: "select", name: "locationId", label: "City", options: cityOptions, rules: { required: "City is required" }, colSpan: 6 },
-          { type: "input", name: "price", label: "Price", inputType: "number", rules: { valueAsNumber: true, min: { value: 0, message: "Price must be 0+" } }, colSpan: 4 },
+          {
+            type: "input",
+            name: "title",
+            label: "Title",
+            rules: { required: "Title is required" },
+            colSpan: 12,
+          },
+          {
+            type: "textarea",
+            name: "shortDescription",
+            label: "Short Description",
+            rules: { required: "Short description is required" },
+            colSpan: 12,
+          },
+          {
+            type: "select",
+            name: "categoryId",
+            label: "Category",
+            options: categoryOptions,
+            rules: { required: "Category is required" },
+            colSpan: 6,
+          },
+          {
+            type: "select",
+            name: "locationId",
+            label: "City",
+            options: cityOptions,
+            rules: { required: "City is required" },
+            colSpan: 6,
+          },
+          {
+            type: "input",
+            name: "price",
+            label: "Price",
+            inputType: "number",
+            rules: {
+              valueAsNumber: true,
+              min: { value: 0, message: "Price must be 0+" },
+            },
+            colSpan: 4,
+          },
           {
             type: "select",
             name: "status",
@@ -192,8 +255,20 @@ export default function PostEditPage() {
             ],
             colSpan: 4,
           },
-          { type: "input", name: "labReportUrl", label: "Lab Report URL (optional)", placeholder: "https://...", colSpan: 12 },
-          { type: "textarea", name: "imagesText", label: "Image URLs (one per line)", placeholder: "https://...\nhttps://...", colSpan: 12 },
+          {
+            type: "input",
+            name: "labReportUrl",
+            label: "Lab Report URL (optional)",
+            placeholder: "https://...",
+            colSpan: 12,
+          },
+          {
+            type: "textarea",
+            name: "imagesText",
+            label: "Image URLs (one per line)",
+            placeholder: "https://...\nhttps://...",
+            colSpan: 12,
+          },
         ],
       },
     ];
@@ -202,23 +277,51 @@ export default function PostEditPage() {
   const dynamicFields = React.useMemo<DynamicField<PostFormValues>[]>(() => {
     return categoryFields.map((f) => {
       const name = fieldKey(f.id) as keyof PostFormValues;
-      const requiredRule = f.required ? { required: `${f.name} is required` } : undefined;
+      const requiredRule = f.required
+        ? { required: `${f.name} is required` }
+        : undefined;
       if (f.fieldType === "select") {
         const opts = (f.options ?? []).map((o) => ({ label: o, value: o }));
-        return { type: "select", name, label: f.name, options: opts, rules: requiredRule, colSpan: 6 };
+        return {
+          type: "select",
+          name,
+          label: f.name,
+          options: opts,
+          rules: requiredRule,
+          colSpan: 6,
+        };
       }
       if (f.fieldType === "multi-select") {
         const opts = (f.options ?? []).map((o) => ({ label: o, value: o }));
-        return { type: "checkbox-group", name, label: f.name, options: opts, direction: "row", rules: requiredRule, colSpan: 12 };
+        return {
+          type: "checkbox-group",
+          name,
+          label: f.name,
+          options: opts,
+          direction: "row",
+          rules: requiredRule,
+          colSpan: 12,
+        };
       }
       const inputType = f.fieldType === "number" ? "number" : "text";
-      return { type: "input", name, label: f.name, placeholder: f.placeholder, inputType, rules: requiredRule, colSpan: 6 };
+      return {
+        type: "input",
+        name,
+        label: f.name,
+        placeholder: f.placeholder,
+        inputType,
+        rules: requiredRule,
+        colSpan: 6,
+      };
     });
   }, [categoryFields]);
 
   const sections = React.useMemo<DynamicFormSection<PostFormValues>[]>(() => {
     if (dynamicFields.length === 0) return baseSections;
-    return [...baseSections, { id: "fields", title: "Category Fields", fields: dynamicFields }];
+    return [
+      ...baseSections,
+      { id: "fields", title: "Category Fields", fields: dynamicFields },
+    ];
   }, [baseSections, dynamicFields]);
 
   return (
@@ -228,7 +331,9 @@ export default function PostEditPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-semibold">Update Post</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Dynamic fields update with the selected category.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Dynamic fields update with the selected category.
+              </p>
             </div>
             <Link href="/modules/post">
               <Button variant="outline">Back to Post Admin</Button>
@@ -237,10 +342,16 @@ export default function PostEditPage() {
         </div>
 
         <section className="rounded-xl border bg-background p-4 md:p-6">
-          {message ? <div className="mb-4 rounded-md border border-muted p-2 text-sm">{message}</div> : null}
+          {message ? (
+            <div className="mb-4 rounded-md border border-muted p-2 text-sm">
+              {message}
+            </div>
+          ) : null}
 
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading post details...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading post details...
+            </p>
           ) : (
             <FormBuilder<PostFormValues>
               form={form}
@@ -255,11 +366,16 @@ export default function PostEditPage() {
                   const fieldValues = categoryFields
                     .map((f) => {
                       const raw = values[fieldKey(f.id)];
-                      if (raw === undefined || raw === null || raw === "") return null;
-                      if (Array.isArray(raw)) return { fieldId: f.id, value: JSON.stringify(raw) };
+                      if (raw === undefined || raw === null || raw === "")
+                        return null;
+                      if (Array.isArray(raw))
+                        return { fieldId: f.id, value: JSON.stringify(raw) };
                       return { fieldId: f.id, value: String(raw) };
                     })
-                    .filter(Boolean) as Array<{ fieldId: number; value: string }>;
+                    .filter(Boolean) as Array<{
+                    fieldId: number;
+                    value: string;
+                  }>;
 
                   await updatePost(postId, {
                     title: values.title.trim(),
@@ -276,7 +392,9 @@ export default function PostEditPage() {
 
                   router.push("/modules/post");
                 } catch (e) {
-                  setMessage(e instanceof Error ? e.message : "Failed to update post");
+                  setMessage(
+                    e instanceof Error ? e.message : "Failed to update post",
+                  );
                 }
               }}
             />
@@ -286,4 +404,3 @@ export default function PostEditPage() {
     </main>
   );
 }
-

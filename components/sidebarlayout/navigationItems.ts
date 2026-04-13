@@ -1,4 +1,4 @@
-import { Boxes, FileText, MapPin, Tags } from "lucide-react";
+import { Boxes, Calendar, FileText, MapPin, Tags } from "lucide-react";
 import { Permission } from "./permissions";
 export const navigation = [
   {
@@ -23,6 +23,13 @@ export const navigation = [
         title: "Cities",
         url: "/modules/city",
         icon: MapPin,
+        isActive: false,
+        requiredPermissions: [Permission.READ_CATEGORY],
+      },
+      {
+        title: "Feature Plans",
+        url: "/modules/feature-plan",
+        icon: Calendar,
         isActive: false,
         requiredPermissions: [Permission.READ_CATEGORY],
       },
