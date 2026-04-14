@@ -33,6 +33,13 @@ export const navigation = [
         isActive: false,
         requiredPermissions: [Permission.READ_CATEGORY],
       },
+      {
+        title: "States",
+        url: "/modules/state",
+        icon: MapPin,
+        isActive: false,
+        requiredPermissions: [Permission.READ_CATEGORY],
+      }
     ],
   },
 ];
