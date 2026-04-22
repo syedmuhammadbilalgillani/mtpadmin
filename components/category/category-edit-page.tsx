@@ -33,6 +33,7 @@ type UpdateCategoryValues = {
   description: string;
   iconImageUrl: string;
   backgroundImageUrl: string;
+  isActive: boolean;
 };
 
 type UpsertFieldValues = {
@@ -103,6 +104,12 @@ export default function CategoryEditPage() {
             placeholder: "https://...",
             colSpan: 6,
           },
+          {
+            type: "switch",
+            name: "isActive",
+            label: "Active",
+            colSpan: 6,
+          },
         ],
       },
     ],
@@ -115,6 +122,7 @@ export default function CategoryEditPage() {
       description: "",
       iconImageUrl: "",
       backgroundImageUrl: "",
+      isActive: false,
     },
   });
 
@@ -124,11 +132,13 @@ export default function CategoryEditPage() {
       setIsLoading(true);
       try {
         const category = await getCategory(categoryId);
+        console.log("category", category);
         form.reset({
           name: category.name ?? "",
           description: category.description ?? "",
           iconImageUrl: category.iconImageUrl ?? "",
           backgroundImageUrl: category.backgroundImageUrl ?? "",
+          isActive: category.isActive ?? false,
         });
         setCategoryFields([...(category.fields ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
       } catch (e) {
@@ -155,6 +165,7 @@ export default function CategoryEditPage() {
         if (values.description.trim()) formData.append("description", values.description.trim());
         if (values.iconImageUrl.trim()) formData.append("iconImage", values.iconImageUrl.trim());
         if (values.backgroundImageUrl.trim()) formData.append("backgroundImage", values.backgroundImageUrl.trim());
+        if (values.isActive !== undefined) formData.append("isActive", values.isActive.toString());
         if (iconFile) formData.set("iconImage", iconFile);
         if (backgroundImageFile) formData.set("backgroundImage", backgroundImageFile);
 
@@ -170,6 +181,7 @@ export default function CategoryEditPage() {
             description: values.description.trim() || undefined,
             iconImage: values.iconImageUrl.trim() || undefined,
             backgroundImage: values.backgroundImageUrl.trim() || undefined,
+            isActive: values.isActive !== undefined ? values.isActive : undefined,
           }),
         });
       }
