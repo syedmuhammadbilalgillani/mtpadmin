@@ -24,6 +24,7 @@ export type AdminCategory = {
   backgroundImageUrl?: string | null
   postImages?: string[] | null
   fields?: AdminCategoryField[]
+  isActive?: boolean
 }
 
 export type CreateCategoryFieldInput = {

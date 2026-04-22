@@ -20,13 +20,6 @@ export const navigation = [
         requiredPermissions: [Permission.READ_CATEGORY],
       },
       {
-        title: "Cities",
-        url: "/modules/city",
-        icon: MapPin,
-        isActive: false,
-        requiredPermissions: [Permission.READ_CATEGORY],
-      },
-      {
         title: "Feature Plans",
         url: "/modules/feature-plan",
         icon: Calendar,
@@ -39,7 +32,14 @@ export const navigation = [
         icon: MapPin,
         isActive: false,
         requiredPermissions: [Permission.READ_CATEGORY],
-      }
+      },
+      {
+        title: "Cities",
+        url: "/modules/city",
+        icon: MapPin,
+        isActive: false,
+        requiredPermissions: [Permission.READ_CATEGORY],
+      },
     ],
   },
 ];
